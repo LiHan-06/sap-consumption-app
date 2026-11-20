@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
 import './App.css'
+import MB51Upload from './pages/MB51Upload.jsx'
 
 const menuItems = [
   { id: 'dashboard', label: '首頁總覽', icon: 'bi-grid-1x2' },
@@ -25,29 +26,7 @@ function App() {
   const renderPage = () => {
     switch (activeMenu) {
       case 'upload':
-        return (
-          <div className="content-card">
-            <div className="section-heading">
-              <div>
-                <h5>MB51 資料上傳</h5>
-                <p>匯入 SAP MB51 Excel，建立物料耗用分析資料。</p>
-              </div>
-              <span className="status-badge status-pending">建置中</span>
-            </div>
-
-            <div className="upload-area">
-              <div className="upload-icon">
-                <i className="bi bi-cloud-arrow-up" />
-              </div>
-              <h6>MB51 Excel 匯入區</h6>
-              <p>後續將提供 Excel 上傳、欄位檢查及資料匯入功能。</p>
-              <button className="btn btn-primary px-4" disabled>
-                <i className="bi bi-upload me-2" />
-                上傳功能建置中
-              </button>
-            </div>
-          </div>
-        )
+        return <MB51Upload />
 
       case 'analysis':
         return (
@@ -141,7 +120,9 @@ function App() {
             </div>
             <div>
               <div className="brand-title">SAP 耗用分析系統</div>
-              <div className="brand-subtitle">MATERIAL CONSUMPTION ANALYSIS</div>
+              <div className="brand-subtitle">
+                MATERIAL CONSUMPTION ANALYSIS
+              </div>
             </div>
           </div>
 
@@ -161,7 +142,9 @@ function App() {
               <button
                 key={item.id}
                 type="button"
-                className={`nav-item ${activeMenu === item.id ? 'active' : ''}`}
+                className={`nav-item ${
+                  activeMenu === item.id ? 'active' : ''
+                }`}
                 onClick={() => setActiveMenu(item.id)}
               >
                 <i className={`bi ${item.icon}`} />
@@ -177,7 +160,9 @@ function App() {
               <button
                 key={item.id}
                 type="button"
-                className={`nav-item ${activeMenu === item.id ? 'active' : ''}`}
+                className={`nav-item ${
+                  activeMenu === item.id ? 'active' : ''
+                }`}
                 onClick={() => setActiveMenu(item.id)}
               >
                 <i className={`bi ${item.icon}`} />
@@ -195,9 +180,16 @@ function App() {
         <div className="page-heading">
           <div>
             <div className="breadcrumb-text">
-              系統首頁 <i className="bi bi-chevron-right" /> {activeItem.label}
+              系統首頁 <i className="bi bi-chevron-right" />{' '}
+              {activeItem.label}
             </div>
-            <h4>{activeMenu === 'dashboard' ? '營運總覽' : activeItem.label}</h4>
+
+            <h4>
+              {activeMenu === 'dashboard'
+                ? '營運總覽'
+                : activeItem.label}
+            </h4>
+
             <p>
               {activeMenu === 'dashboard'
                 ? '掌握 SAP 物料耗用狀況與資料管理進度。'
@@ -211,6 +203,7 @@ function App() {
           </div>
         </div>
 
+        {/* 頁面內容 */}
         {renderPage()}
 
         <footer className="app-footer">
@@ -286,10 +279,14 @@ function Dashboard({ onNavigate }) {
               <i className="bi bi-cloud-arrow-up" />
             </div>
             <h6>匯入 MB51 Excel 檔案</h6>
-            <p>支援 Excel 格式，後續將提供欄位檢查及資料匯入。</p>
-            <button className="btn btn-primary px-4" disabled>
+            <p>請進入 MB51 資料上傳頁面選擇 Excel 檔案。</p>
+            <button
+              type="button"
+              className="btn btn-primary px-4"
+              onClick={() => onNavigate('upload')}
+            >
               <i className="bi bi-upload me-2" />
-              上傳功能建置中
+              前往資料上傳
             </button>
           </div>
         </section>
@@ -304,7 +301,10 @@ function Dashboard({ onNavigate }) {
           </div>
 
           <div className="quick-list">
-            <button onClick={() => onNavigate('upload')}>
+            <button
+              type="button"
+              onClick={() => onNavigate('upload')}
+            >
               <span className="quick-icon blue">
                 <i className="bi bi-file-earmark-arrow-up" />
               </span>
@@ -315,7 +315,10 @@ function Dashboard({ onNavigate }) {
               <i className="bi bi-chevron-right quick-arrow" />
             </button>
 
-            <button onClick={() => onNavigate('analysis')}>
+            <button
+              type="button"
+              onClick={() => onNavigate('analysis')}
+            >
               <span className="quick-icon teal">
                 <i className="bi bi-bar-chart-line" />
               </span>
@@ -326,7 +329,10 @@ function Dashboard({ onNavigate }) {
               <i className="bi bi-chevron-right quick-arrow" />
             </button>
 
-            <button onClick={() => onNavigate('data')}>
+            <button
+              type="button"
+              onClick={() => onNavigate('data')}
+            >
               <span className="quick-icon purple">
                 <i className="bi bi-database" />
               </span>
@@ -362,22 +368,38 @@ function Dashboard({ onNavigate }) {
               <tr>
                 <td>MB51 資料上傳</td>
                 <td>Excel 匯入及資料檢查</td>
-                <td><span className="status-badge status-pending">建置中</span></td>
+                <td>
+                  <span className="status-badge status-pending">
+                    開發中
+                  </span>
+                </td>
               </tr>
               <tr>
                 <td>物料耗用分析</td>
                 <td>耗用總表、月統計及物料排名</td>
-                <td><span className="status-badge status-pending">建置中</span></td>
+                <td>
+                  <span className="status-badge status-pending">
+                    建置中
+                  </span>
+                </td>
               </tr>
               <tr>
                 <td>耗用趨勢圖</td>
                 <td>單一物料每月耗用趨勢</td>
-                <td><span className="status-badge status-pending">建置中</span></td>
+                <td>
+                  <span className="status-badge status-pending">
+                    建置中
+                  </span>
+                </td>
               </tr>
               <tr>
                 <td>內部聊天室</td>
                 <td>訊息、@TAG 及報表連結分享</td>
-                <td><span className="status-badge status-pending">建置中</span></td>
+                <td>
+                  <span className="status-badge status-pending">
+                    建置中
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>

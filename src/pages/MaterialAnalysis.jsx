@@ -128,7 +128,6 @@ function ConsumptionChart({ data }) {
           role="img"
           aria-label="每月淨耗用趨勢圖"
         >
-          {/* 零值基準線 */}
           <line
             x1={paddingLeft}
             y1={zeroY}
@@ -139,7 +138,6 @@ function ConsumptionChart({ data }) {
             strokeWidth="1.5"
           />
 
-          {/* 趨勢線 */}
           {data.length > 1 && (
             <polyline
               points={points}
@@ -151,7 +149,6 @@ function ConsumptionChart({ data }) {
             />
           )}
 
-          {/* 每月數據點及標籤 */}
           {data.map((item, index) => (
             <g key={item.month}>
               <circle
@@ -185,7 +182,6 @@ function ConsumptionChart({ data }) {
             </g>
           ))}
 
-          {/* 零值說明 */}
           <text
             x="8"
             y={zeroY - 5}
@@ -200,10 +196,124 @@ function ConsumptionChart({ data }) {
   )
 }
 
+// 單一物料分析內容
+function MaterialResult({ item, months }) {
+  return (
+    <>
+      <div className="row g-3 mb-4">
+
+        <div className="col-12 col-md-6 col-xl-3">
+          <div className="bg-light rounded p-3 h-100">
+            <div className="small text-secondary mb-1">
+              區間 261 耗用量
+            </div>
+            <div className="fs-4 fw-bold">
+              {formatNumber(item.totalIssue)}
+            </div>
+          </div>
+        </div>
+
+        <div className="col-12 col-md-6 col-xl-3">
+          <div className="bg-light rounded p-3 h-100">
+            <div className="small text-secondary mb-1">
+              區間 262 退料量
+            </div>
+            <div className="fs-4 fw-bold">
+              {formatNumber(item.totalReturned)}
+            </div>
+          </div>
+        </div>
+
+        <div className="col-12 col-md-6 col-xl-3">
+          <div className="bg-light rounded p-3 h-100">
+            <div className="small text-secondary mb-1">
+              區間淨耗用量
+            </div>
+            <div className="fs-4 fw-bold">
+              {formatNumber(item.totalNet)}
+            </div>
+          </div>
+        </div>
+
+        <div className="col-12 col-md-6 col-xl-3">
+          <div className="bg-primary-subtle rounded p-3 h-100">
+            <div className="small text-primary mb-1">
+              平均月淨耗用量
+            </div>
+            <div className="fs-4 fw-bold text-primary">
+              {formatNumber(item.averageMonthly)}
+            </div>
+
+            <div className="small text-secondary mt-1">
+              {formatNumber(item.totalNet)} ÷ {months.length} 個月
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 趨勢圖 */}
+      <div className="mb-4">
+        <ConsumptionChart data={item.monthlyData} />
+      </div>
+
+      {/* 每月明細 */}
+      <h6 className="fw-bold mb-2">
+        每月耗用明細
+      </h6>
+
+      <div className="table-responsive">
+        <table className="table table-bordered table-hover align-middle mb-0">
+          <thead className="table-light">
+            <tr>
+              <th>月份</th>
+              <th className="text-end">261 耗用量</th>
+              <th className="text-end">262 退料量</th>
+              <th className="text-end">淨耗用量</th>
+            </tr>
+          </thead>
+
+            <tbody>
+                {item.monthlyData
+                  .filter((monthItem) => monthItem.count > 0)
+                  .map((monthItem) => (
+                    <tr key={monthItem.month}>
+                      <td className="fw-semibold">
+                        {monthItem.month}
+                      </td>
+
+                      <td className="text-end">
+                        {formatNumber(monthItem.issue)}
+                      </td>
+
+                      <td className="text-end">
+                        {formatNumber(monthItem.returned)}
+                      </td>
+
+                      <td className="text-end fw-semibold">
+                        {formatNumber(monthItem.net)}
+                      </td>
+
+                    </tr>
+                  ))}
+              </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
 export default function MaterialAnalysis({ rows, onGoUpload }) {
+  // 查詢欄位
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [materialKeyword, setMaterialKeyword] = useState('')
+
+  // 已送出的查詢條件
+  const [appliedFilters, setAppliedFilters] = useState(null)
+
+  const invalidDateRange =
+    startDate && endDate && startDate > endDate
 
   // 整理 MB51 原始資料
   const normalizedRows = useMemo(() => {
@@ -218,32 +328,84 @@ export default function MaterialAnalysis({ rows, onGoUpload }) {
     }))
   }, [rows])
 
+  // 從匯入資料取得不重複的物料編號
+const materialOptions = useMemo(() => {
+  return [...new Set(
+    normalizedRows
+      .map((row) => row.material)
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'zh-TW'))
+}, [normalizedRows])
+
+  // 尚未匯入資料
+  if (!rows.length) {
+    return (
+      <div className="content-card">
+        <div className="section-heading">
+          <div>
+            <h5>物料耗用分析</h5>
+            <p>請先匯入並確認 MB51 Excel 資料。</p>
+          </div>
+
+          <span className="status-badge status-pending">
+            尚無資料
+          </span>
+        </div>
+
+        <div className="empty-state">
+          <i className="bi bi-bar-chart-line" />
+
+          <h6>目前沒有可分析的資料</h6>
+
+          <p>
+            完成 MB51 資料匯入後，即可查看各物料耗用情況。
+          </p>
+
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={onGoUpload}
+          >
+            <i className="bi bi-upload me-2" />
+            前往 MB51 資料上傳
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   // 產生月份區間
   const months = useMemo(() => {
+    if (!appliedFilters) return []
+
     return generateMonths(
-      startDate,
-      endDate,
+      appliedFilters.startDate,
+      appliedFilters.endDate,
       normalizedRows.map((row) => row.dateKey)
     )
-  }, [startDate, endDate, normalizedRows])
+  }, [appliedFilters, normalizedRows])
 
-  // 篩選資料
+  // 篩選資料：只有送出查詢後才開始分析
   const filteredRows = useMemo(() => {
-    if (startDate && endDate && startDate > endDate) {
-      return []
-    }
+    if (!appliedFilters) return []
+
+    const {
+      startDate: queryStart,
+      endDate: queryEnd,
+      materialKeyword: queryMaterial,
+    } = appliedFilters
 
     return normalizedRows.filter((row) => {
       const matchesDate =
         row.dateKey &&
-        (!startDate || row.dateKey >= startDate) &&
-        (!endDate || row.dateKey <= endDate)
+        (!queryStart || row.dateKey >= queryStart) &&
+        (!queryEnd || row.dateKey <= queryEnd)
 
       const matchesMaterial =
-        !materialKeyword ||
+        !queryMaterial ||
         row.material
           .toLowerCase()
-          .includes(materialKeyword.trim().toLowerCase())
+          .includes(queryMaterial.trim().toLowerCase())
 
       const matchesMovement =
         ['261', '262'].includes(row.movement)
@@ -254,15 +416,12 @@ export default function MaterialAnalysis({ rows, onGoUpload }) {
         matchesMovement
       )
     })
-  }, [
-    normalizedRows,
-    startDate,
-    endDate,
-    materialKeyword,
-  ])
+  }, [normalizedRows, appliedFilters])
 
   // 依物料及月份分別計算
   const monthlySummary = useMemo(() => {
+    if (!appliedFilters) return []
+
     const grouped = new Map()
 
     filteredRows.forEach((row) => {
@@ -343,46 +502,33 @@ export default function MaterialAnalysis({ rows, onGoUpload }) {
           averageMonthly,
         }
       })
-  }, [filteredRows, months])
+  }, [filteredRows, months, appliedFilters])
 
-  const invalidDateRange =
-    startDate && endDate && startDate > endDate
+  // 送出查詢
+  const handleSearch = () => {
+    if (invalidDateRange) return
 
-  // 尚未匯入資料
-  if (!rows.length) {
-    return (
-      <div className="content-card">
-        <div className="section-heading">
-          <div>
-            <h5>物料耗用分析</h5>
-            <p>請先匯入並確認 MB51 Excel 資料。</p>
-          </div>
+    setAppliedFilters({
+      startDate,
+      endDate,
+      materialKeyword: materialKeyword.trim(),
+    })
+  }
 
-          <span className="status-badge status-pending">
-            尚無資料
-          </span>
-        </div>
+  // 清除條件
+  const handleClear = () => {
+    setStartDate('')
+    setEndDate('')
+    setMaterialKeyword('')
+    setAppliedFilters(null)
+  }
 
-        <div className="empty-state">
-          <i className="bi bi-bar-chart-line" />
-
-          <h6>目前沒有可分析的資料</h6>
-
-          <p>
-            完成 MB51 資料匯入後，即可查看各物料耗用情況。
-          </p>
-
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={onGoUpload}
-          >
-            <i className="bi bi-upload me-2" />
-            前往 MB51 資料上傳
-          </button>
-        </div>
-      </div>
-    )
+  // 回到最上方
+  const handleBackToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
   }
 
   return (
@@ -390,15 +536,9 @@ export default function MaterialAnalysis({ rows, onGoUpload }) {
 
       {/* 頁面標題 */}
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-        <div>
-          <h4 className="fw-bold mb-1">
-            物料耗用分析
-          </h4>
-
-          <div className="text-secondary small">
-            依指定日期區間分析各物料每月耗用及平均耗用量
-          </div>
-        </div>
+        <h4 className="fw-bold mb-0">
+          物料耗用分析
+        </h4>
 
         <span className="badge bg-success-subtle text-success px-3 py-2">
           已載入 {rows.length} 筆資料
@@ -414,9 +554,10 @@ export default function MaterialAnalysis({ rows, onGoUpload }) {
             查詢條件
           </h6>
 
-          <div className="row g-3 align-items-end">
+          {/* 第一排：查詢欄位 */}
+          <div className="row g-3">
 
-            <div className="col-12 col-md-3">
+            <div className="col-12 col-md-4">
               <label className="form-label small fw-semibold">
                 起始過帳日期
               </label>
@@ -429,7 +570,7 @@ export default function MaterialAnalysis({ rows, onGoUpload }) {
               />
             </div>
 
-            <div className="col-12 col-md-3">
+            <div className="col-12 col-md-4">
               <label className="form-label small fw-semibold">
                 結束過帳日期
               </label>
@@ -438,236 +579,187 @@ export default function MaterialAnalysis({ rows, onGoUpload }) {
                 type="date"
                 className="form-control"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
                 min={startDate || undefined}
+                onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
 
+            
             <div className="col-12 col-md-4">
               <label className="form-label small fw-semibold">
                 物料編號
               </label>
 
-              <input
-                className="form-control"
+              <select
+                className="form-select"
                 value={materialKeyword}
                 onChange={(e) => setMaterialKeyword(e.target.value)}
-                placeholder="輸入完整或部分物料編號"
-              />
+              >
+                <option value="">全部物料</option>
+
+                {materialOptions.map((material) => (
+                  <option key={material} value={material}>
+                    {material}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="col-12 col-md-2">
-              <button
-                type="button"
-                className="btn btn-outline-secondary w-100"
-                onClick={() => {
-                  setStartDate('')
-                  setEndDate('')
-                  setMaterialKeyword('')
-                }}
-              >
-                <i className="bi bi-arrow-counterclockwise me-1" />
-                清除條件
-              </button>
-            </div>
 
           </div>
 
+          {/* 日期錯誤提醒 */}
           {invalidDateRange && (
             <div className="alert alert-warning mt-3 mb-0">
               起始日期不可晚於結束日期。
             </div>
           )}
 
-        </div>
-      </div>
+          {/* 第二排：操作按鈕 */}
+          <div className="d-flex justify-content-center gap-3 mt-4">
 
-      {/* 分析結果 */}
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body p-4">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleSearch}
+              disabled={Boolean(invalidDateRange)}
+            >
+              <i className="bi bi-search me-2" />
+              送出查詢
+            </button>
 
-          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-            <div>
-              <h6 className="fw-bold mb-1">
-                物料耗用分析結果
-              </h6>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={handleClear}
+            >
+              <i className="bi bi-arrow-counterclockwise me-1" />
+              清除條件
+            </button>
 
-              <div className="text-secondary small">
-                異動資料：{filteredRows.length} 筆
-                ／ 物料：{monthlySummary.length} 種
-                ／ 統計月份：{months.length} 個月
-              </div>
-            </div>
           </div>
 
-          {invalidDateRange ? (
-            <div className="text-center text-secondary py-5">
-              請確認日期區間是否正確。
-            </div>
-          ) : monthlySummary.length > 0 ? (
+        </div>
+      </div>
 
-            monthlySummary.map((item) => (
-              <div
-                key={item.material}
-                className="border rounded p-3 mb-4"
-              >
+      {/* 分析結果：送出查詢後才顯示 */}
+      {appliedFilters && (
+        <div className="card border-0 shadow-sm mb-4">
+          <div className="card-body p-4">
 
-                {/* 物料標題 */}
-                <div className="d-flex align-items-center gap-2 mb-3">
-                  <i className="bi bi-box-seam text-primary fs-5" />
-
-                  <h6 className="fw-bold mb-0">
-                    物料編號：{item.material}
-                  </h6>
-                </div>
-
-                {/* 單一物料統計卡片 */}
-                <div className="row g-3 mb-4">
-
-                  <div className="col-12 col-md-6 col-xl-3">
-                    <div className="bg-light rounded p-3 h-100">
-                      <div className="small text-secondary mb-1">
-                        區間 261 耗用量
-                      </div>
-
-                      <div className="fs-4 fw-bold">
-                        {formatNumber(item.totalIssue)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="col-12 col-md-6 col-xl-3">
-                    <div className="bg-light rounded p-3 h-100">
-                      <div className="small text-secondary mb-1">
-                        區間 262 退料量
-                      </div>
-
-                      <div className="fs-4 fw-bold">
-                        {formatNumber(item.totalReturned)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="col-12 col-md-6 col-xl-3">
-                    <div className="bg-light rounded p-3 h-100">
-                      <div className="small text-secondary mb-1">
-                        區間淨耗用量
-                      </div>
-
-                      <div className="fs-4 fw-bold">
-                        {formatNumber(item.totalNet)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="col-12 col-md-6 col-xl-3">
-                    <div className="bg-primary-subtle rounded p-3 h-100">
-                      <div className="small text-primary mb-1">
-                        平均月淨耗用量
-                      </div>
-
-                      <div className="fs-4 fw-bold text-primary">
-                        {formatNumber(item.averageMonthly)}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* 趨勢圖 */}
-                <div className="mb-4">
-                  <ConsumptionChart data={item.monthlyData} />
-                </div>
-
-                {/* 每月明細 */}
-                <h6 className="fw-bold mb-2">
-                  每月耗用明細
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <div>
+                <h6 className="fw-bold mb-1">
+                  物料耗用分析結果
                 </h6>
 
-                <div className="table-responsive">
-                  <table className="table table-bordered table-hover align-middle mb-0">
-
-                    <thead className="table-light">
-                      <tr>
-                        <th>月份</th>
-                        <th className="text-end">261 耗用量</th>
-                        <th className="text-end">262 退料量</th>
-                        <th className="text-end">淨耗用量</th>
-                        <th className="text-end">異動筆數</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {item.monthlyData.map((monthItem) => (
-                        <tr key={monthItem.month}>
-                          <td className="fw-semibold">
-                            {monthItem.month}
-                          </td>
-
-                          <td className="text-end">
-                            {formatNumber(monthItem.issue)}
-                          </td>
-
-                          <td className="text-end">
-                            {formatNumber(monthItem.returned)}
-                          </td>
-
-                          <td className="text-end fw-semibold">
-                            {formatNumber(monthItem.net)}
-                          </td>
-
-                          <td className="text-end">
-                            {monthItem.count}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-
-                  </table>
+                <div className="text-secondary small">
+                  異動資料：{filteredRows.length} 筆
+                  ／ 物料：{monthlySummary.length} 種
+                  ／ 統計月份：{months.length} 個月
                 </div>
-
-                {/* 平均計算說明 */}
-                <div className="small text-secondary mt-2">
-                  平均月淨耗用量 =
-                  {formatNumber(item.totalNet)} ÷ {months.length}
-                  個月
-                  {item.averageMonthly < 0 && (
-                    <span className="text-danger ms-2">
-                      （含負數退料月份）
-                    </span>
-                  )}
-                </div>
-
               </div>
-            ))
-
-          ) : (
-            <div className="text-center text-secondary py-5">
-              目前查詢條件沒有 261／262 資料。
             </div>
-          )}
 
+            {monthlySummary.length > 0 ? (
+
+              monthlySummary.length > 1 ? (
+
+                /* 多筆物料：摺疊卡片 */
+                <div className="d-flex flex-column gap-3">
+                  {monthlySummary.map((item, index) => (
+                    <details
+                      key={item.material}
+                      className="border rounded"
+                      open={index === 0}
+                    >
+                      <summary className="p-3 fw-bold bg-light"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <i className="bi bi-box-seam text-primary me-2" />
+                        物料編號：{item.material}
+
+                        <span className="text-secondary small fw-normal ms-2">
+                          平均月淨耗用量：{formatNumber(item.averageMonthly)}
+                        </span>
+                      </summary>
+
+                      <div className="p-3">
+                        <MaterialResult
+                          item={item}
+                          months={months}
+                        />
+                      </div>
+                    </details>
+                  ))}
+                </div>
+
+              ) : (
+
+                /* 單筆物料：直接顯示 */
+                <div className="border rounded p-3">
+                  <div className="d-flex align-items-center gap-2 mb-3">
+                    <i className="bi bi-box-seam text-primary fs-5" />
+                    <h6 className="fw-bold mb-0">
+                      物料編號：{monthlySummary[0].material}
+                    </h6>
+                  </div>
+
+                  <MaterialResult
+                    item={monthlySummary[0]}
+                    months={months}
+                  />
+                </div>
+
+              )
+
+            ) : (
+
+              <div className="text-center text-secondary py-5">
+                目前查詢條件沒有 261／262 資料。
+              </div>
+
+            )}
+
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 計算規則 */}
-      <div className="alert alert-info small mb-0">
-        <strong>計算規則：</strong>
+      {/* 尚未查詢時的提示 */}
+      {!appliedFilters && (
+        <div className="card border-0 shadow-sm">
+          <div className="card-body text-center py-5">
+            <i className="bi bi-search fs-1 text-secondary" />
 
-        <ul className="mb-0 mt-2">
-          <li>依物料編號分開統計，不進行跨物料合計。</li>
-          <li>261 耗用量：同一物料的 261 數量絕對值加總。</li>
-          <li>262 退料量：同一物料的 262 數量絕對值加總。</li>
-          <li>淨耗用量＝261 耗用量－262 退料量。</li>
-          <li>平均月淨耗用量＝區間淨耗用量 ÷ 區間月份數。</li>
-          <li>沒有異動的月份以 0 納入平均計算。</li>
-          <li>負數淨耗用量照實納入，不轉換為 0。</li>
-        </ul>
+            <h6 className="fw-bold mt-3">
+              請設定查詢條件
+            </h6>
 
-        <div className="mt-2">
-          目前僅納入 261／262 異動類型。
+            <p className="text-secondary small mb-0">
+              選擇過帳日期區間或輸入物料編號，再按下「送出查詢」即可查看分析結果。
+            </p>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* 回到最上方 */}
+      <button
+        type="button"
+        className="btn btn-primary rounded-circle shadow d-flex align-items-center justify-content-center p-0"
+        onClick={handleBackToTop}
+        title="回到最上方"
+        aria-label="回到最上方"
+        style={{
+          position: 'fixed',
+          right: '24px',
+          bottom: '24px',
+          width: '48px',
+          height: '48px',
+          zIndex: 1000,
+        }}
+      >
+        <span className="fw-bold">TOP</span>
+      </button>
 
     </div>
   )

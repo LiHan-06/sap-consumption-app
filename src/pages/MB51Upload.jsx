@@ -9,8 +9,6 @@ const REQUIRED_COLUMNS = [
   '以輸入單位表示的數量',
 ]
 
-const MAX_PREVIEW_ROWS = 20
-
 // 將日期統一轉成 YYYY-MM-DD
 function formatDate(value) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
@@ -104,7 +102,6 @@ function validateRow(row, index) {
   return {
     valid: errors.length === 0,
     errors,
-
     data: {
       過帳日期: date,
       異動類型: movement,
@@ -120,6 +117,7 @@ export default function MB51Upload({ onImport }) {
   const [errors, setErrors] = useState([])
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+
   const [confirmed, setConfirmed] = useState(false)
 
   const validRows = rows.filter((row) => row.valid)
@@ -130,6 +128,9 @@ export default function MB51Upload({ onImport }) {
     const file = event.target.files?.[0]
 
     if (!file) return
+
+    // 允許再次選擇相同檔案
+    event.target.value = ''
 
     setFileName(file.name)
     setRows([])
@@ -187,7 +188,7 @@ export default function MB51Upload({ onImport }) {
 
       if (missingColumns.length > 0) {
         throw new Error(
-          `缺少必要欄位：${missingColumns.join('、')}。請確認欄位名稱與 SAP 匯出格式一致。`
+          `缺少必要欄位：${missingColumns.join('、')}。請確認 Excel 欄位名稱。`
         )
       }
 
@@ -199,7 +200,7 @@ export default function MB51Upload({ onImport }) {
 
       if (duplicateColumns.length > 0) {
         throw new Error(
-          `欄位名稱重複：${duplicateColumns.join('、')}。請先整理 Excel 欄位。`
+          `欄位名稱重複：${duplicateColumns.join('、')}。`
         )
       }
 
@@ -241,19 +242,19 @@ export default function MB51Upload({ onImport }) {
       )
 
       setRows(results)
-      setErrors(
-        results.flatMap((result) => result.errors)
+
+      const allErrors = results.flatMap(
+        (result) => result.errors
       )
 
+      setErrors(allErrors)
+
       if (results.every((result) => result.valid)) {
-        setMessage(
-          '欄位及資料格式檢查完成，可以確認匯入。'
-        )
+        setMessage('資料檢查通過，可以確認匯入。')
       } else {
-        setMessage(
-          '資料檢查完成，但有部分資料需要修正。'
-        )
+        setMessage('資料檢查未通過，請確認異常資料。')
       }
+
     } catch (error) {
       setMessage(
         error.message || 'Excel 讀取失敗，請確認檔案格式。'
@@ -267,7 +268,8 @@ export default function MB51Upload({ onImport }) {
   function handleConfirm() {
     if (
       invalidRows.length > 0 ||
-      validRows.length === 0
+      validRows.length === 0 ||
+      confirmed
     ) {
       return
     }
@@ -278,118 +280,50 @@ export default function MB51Upload({ onImport }) {
     onImport?.(imported)
 
     setConfirmed(true)
-
     setMessage(
-      `已確認 ${imported.length} 筆資料，並帶入物料耗用分析頁面。`
+      `已確認 ${imported.length} 筆資料，並帶入物料耗用分析。`
     )
-  }
-
-  // 清除資料
-  function handleReset() {
-    setFileName('')
-    setRows([])
-    setErrors([])
-    setMessage('')
-    setConfirmed(false)
-
-    const input = document.getElementById(
-      'mb51-file-input'
-    )
-
-    if (input) {
-      input.value = ''
-    }
   }
 
   return (
     <div className="container-fluid py-4">
 
-      {/* 頁面標題 */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h4 className="fw-bold mb-1">
-            MB51 資料上傳
-          </h4>
-
-          <div className="text-secondary small">
-            匯入 SAP 物料異動資料，作為後續物料耗用分析來源
-          </div>
-        </div>
-
-        <span className="badge bg-primary-subtle text-primary px-3 py-2">
-          資料匯入
-        </span>
+      {/* MB51 上傳標題 */}
+      <div className="mb-4">
+        <h4 className="fw-bold mb-1">
+          MB51 資料上傳
+        </h4>
       </div>
 
-      {/* 匯入流程 */}
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body p-4">
-          <h6 className="fw-bold mb-3">
-            <i className="bi bi-info-circle me-2 text-primary" />
-            SAP MB51 匯出資料準備
-          </h6>
+      
+    {/* Excel 欄位提醒 */}
+    <div className="card border-0 shadow-sm mb-4">
+    <div className="card-body p-4 text-center">
 
-          <div className="row g-3">
-            {[
-              ['01', 'SAP 執行 MB51', '依需求設定查詢條件並匯出 Excel'],
-              ['02', '整理 Excel 欄位', '保留下方指定的四個必要欄位'],
-              ['03', '上傳 Excel', '選擇整理完成的 Excel 檔案'],
-              ['04', '檢查及預覽', '系統檢查欄位與資料格式'],
-            ].map(([number, title, description]) => (
-              <div
-                className="col-12 col-md-6 col-xl-3"
-                key={number}
-              >
-                <div className="d-flex gap-3">
-                  <div
-                    className="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
-                    style={{ width: 38, height: 38 }}
-                  >
-                    {number}
-                  </div>
-
-                  <div>
-                    <div className="fw-semibold">
-                      {title}
-                    </div>
-
-                    <div className="text-secondary small">
-                      {description}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <hr className="my-4" />
-
-          <div className="fw-semibold mb-2">
-            Excel 必要欄位（欄位名稱不可修改）
-          </div>
-
-          <div className="d-flex flex-wrap gap-2">
-            {REQUIRED_COLUMNS.map((column) => (
-              <span
-                key={column}
-                className="badge bg-light text-dark border px-3 py-2"
-              >
-                {column}
-              </span>
-            ))}
-          </div>
-
-          <div className="alert alert-warning mt-3 mb-0 small">
-            <i className="bi bi-exclamation-triangle me-2" />
-            物料編號請以文字格式保留，避免前導 0 遺失。
-            上傳時保留 SAP 原始數量正負號，分析時再依 261／262 分類。
-          </div>
+        <div className="fw-semibold mb-3">
+        <i className="bi bi-info-circle me-2 text-primary" />
+        SAP MB51 匯出 Excel 僅需保留以下四個欄位：
         </div>
-      </div>
 
-      {/* 上傳區 */}
+        <div className="d-flex flex-wrap justify-content-center gap-2">
+        {REQUIRED_COLUMNS.map((column) => (
+            <span
+            key={column}
+            className="badge bg-light text-dark border px-3 py-2"
+            >
+            {column}
+            </span>
+        ))}
+        </div>
+
+    </div>
+    </div>
+
+
+      {/* Excel 上傳區 */}
       <div className="card border-0 shadow-sm mb-4">
         <div className="card-body p-4">
+
           <h6 className="fw-bold mb-3">
             上傳 MB51 Excel 檔案
           </h6>
@@ -428,18 +362,6 @@ export default function MB51Upload({ onImport }) {
             onChange={handleFileChange}
           />
 
-          <div className="d-flex flex-wrap gap-2 mt-3">
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={handleReset}
-              disabled={loading}
-            >
-              <i className="bi bi-arrow-counterclockwise me-2" />
-              清除資料
-            </button>
-          </div>
-
           {loading && (
             <div className="text-primary mt-3 small">
               <span className="spinner-border spinner-border-sm me-2" />
@@ -452,16 +374,17 @@ export default function MB51Upload({ onImport }) {
               className={`alert mt-3 mb-0 ${
                 confirmed
                   ? 'alert-success'
-                  : errors.length > 0
-                    ? 'alert-warning'
-                    : rows.length > 0
-                      ? 'alert-info'
-                      : 'alert-danger'
+                  : rows.length > 0
+                    ? invalidRows.length > 0
+                      ? 'alert-warning'
+                      : 'alert-success'
+                    : 'alert-danger'
               }`}
             >
               {message}
             </div>
           )}
+
         </div>
       </div>
 
@@ -470,12 +393,14 @@ export default function MB51Upload({ onImport }) {
         <>
           <div className="row g-3 mb-4">
 
+            {/* 資料總筆數 */}
             <div className="col-12 col-md-4">
-              <div className="card border-0 shadow-sm">
+              <div className="card border-0 shadow-sm h-100">
                 <div className="card-body">
                   <div className="text-secondary small">
                     資料總筆數
                   </div>
+
                   <div className="fs-3 fw-bold">
                     {rows.length}
                   </div>
@@ -483,25 +408,37 @@ export default function MB51Upload({ onImport }) {
               </div>
             </div>
 
+            {/* 檢查結果 */}
             <div className="col-12 col-md-4">
-              <div className="card border-0 shadow-sm">
+              <div className="card border-0 shadow-sm h-100">
                 <div className="card-body">
                   <div className="text-secondary small">
-                    檢查通過
+                    檢查是否通過
                   </div>
-                  <div className="fs-3 fw-bold text-success">
-                    {validRows.length}
+
+                  <div
+                    className={`fs-3 fw-bold ${
+                      invalidRows.length === 0
+                        ? 'text-success'
+                        : 'text-danger'
+                    }`}
+                  >
+                    {invalidRows.length === 0
+                      ? '通過'
+                      : '未通過'}
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* 異常筆數 */}
             <div className="col-12 col-md-4">
-              <div className="card border-0 shadow-sm">
+              <div className="card border-0 shadow-sm h-100">
                 <div className="card-body">
                   <div className="text-secondary small">
                     異常筆數
                   </div>
+
                   <div className="fs-3 fw-bold text-danger">
                     {invalidRows.length}
                   </div>
@@ -511,108 +448,48 @@ export default function MB51Upload({ onImport }) {
 
           </div>
 
-          {/* 異常訊息 */}
+          {/* 異常原因：只有發生異常時才顯示 */}
           {errors.length > 0 && (
-            <div className="card border-0 shadow-sm mb-4">
-              <div className="card-body p-4">
-                <h6 className="fw-bold text-danger mb-3">
-                  <i className="bi bi-exclamation-circle me-2" />
-                  資料異常明細
-                </h6>
-
-                <ul className="mb-0 small text-danger">
-                  {errors.slice(0, 50).map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-
-                {errors.length > 50 && (
-                  <div className="small text-secondary mt-2">
-                    另有 {errors.length - 50} 筆異常未顯示。
-                  </div>
-                )}
+            <div className="alert alert-warning mb-4">
+              <div className="fw-semibold mb-2">
+                <i className="bi bi-exclamation-triangle me-2" />
+                異常資料原因
               </div>
+
+              <ul className="mb-0 small">
+                {errors.slice(0, 50).map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+
+              {errors.length > 50 && (
+                <div className="small mt-2">
+                  另有 {errors.length - 50} 筆異常未顯示。
+                </div>
+              )}
             </div>
           )}
 
-          {/* 資料預覽 */}
-          <div className="card border-0 shadow-sm mb-4">
-            <div className="card-body p-4">
-
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h6 className="fw-bold mb-0">
-                  資料預覽
-                </h6>
-
-                <span className="text-secondary small">
-                  顯示前 {Math.min(rows.length, MAX_PREVIEW_ROWS)} 筆
-                </span>
-              </div>
-
-              <div className="table-responsive">
-                <table className="table table-hover table-bordered align-middle small">
-                  <thead className="table-light">
-                    <tr>
-                      <th>檢查結果</th>
-
-                      {REQUIRED_COLUMNS.map((column) => (
-                        <th key={column}>{column}</th>
-                      ))}
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {rows.slice(0, MAX_PREVIEW_ROWS).map((row, index) => (
-                      <tr key={index}>
-                        <td>
-                          {row.valid ? (
-                            <span className="badge bg-success">
-                              通過
-                            </span>
-                          ) : (
-                            <span className="badge bg-danger">
-                              異常
-                            </span>
-                          )}
-                        </td>
-
-                        {REQUIRED_COLUMNS.map((column) => (
-                          <td key={column}>
-                            {row.data[column] ?? '-'}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {rows.length > MAX_PREVIEW_ROWS && (
-                <div className="text-secondary small">
-                  尚有 {rows.length - MAX_PREVIEW_ROWS} 筆資料未顯示於預覽。
-                </div>
-              )}
-
-              <div className="d-flex justify-content-end mt-3">
-                <button
-                  type="button"
-                  className="btn btn-primary px-4"
-                  onClick={handleConfirm}
-                  disabled={
-                    invalidRows.length > 0 ||
-                    validRows.length === 0 ||
-                    confirmed
-                  }
-                >
-                  <i className="bi bi-check-circle me-2" />
-                  {confirmed ? '已確認' : '確認匯入資料'}
-                </button>
-              </div>
-
-            </div>
+          {/* 確認匯入 */}
+          <div className="d-flex justify-content-end">
+            <button
+              type="button"
+              className="btn btn-primary px-4 py-2"
+              onClick={handleConfirm}
+              disabled={
+                invalidRows.length > 0 ||
+                validRows.length === 0 ||
+                confirmed
+              }
+            >
+              <i className="bi bi-check-circle me-2" />
+              {confirmed ? '已確認匯入' : '確認匯入資料'}
+            </button>
           </div>
+
         </>
       )}
+
     </div>
   )
 }

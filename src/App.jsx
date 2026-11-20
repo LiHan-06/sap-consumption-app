@@ -4,6 +4,7 @@ import './App.css'
 import MB51Upload from './pages/MB51Upload.jsx'
 import MaterialAnalysis from './pages/MaterialAnalysis.jsx'
 
+// 保留所有功能選單，方便未來重新開放
 const menuItems = [
   { id: 'dashboard', label: '首頁總覽', icon: 'bi-grid-1x2' },
   { id: 'upload', label: 'MB51 資料上傳', icon: 'bi-file-earmark-arrow-up' },
@@ -17,8 +18,14 @@ const adminItems = [
   { id: 'settings', label: '系統設定', icon: 'bi-gear' },
 ]
 
+// 目前暫時開放的功能
+const visibleMenuItems = menuItems.filter((item) =>
+  ['upload', 'analysis'].includes(item.id)
+)
+
 function App() {
-  const [activeMenu, setActiveMenu] = useState('dashboard')
+  // 預設進入 MB51 資料上傳
+  const [activeMenu, setActiveMenu] = useState('upload')
 
   // 已確認匯入的資料由 App 統一保存
   const [importedRows, setImportedRows] = useState([])
@@ -47,6 +54,7 @@ function App() {
           />
         )
 
+      // 以下功能保留，暫時不開放導覽入口
       case 'data':
       case 'chat':
       case 'users':
@@ -73,6 +81,7 @@ function App() {
           </div>
         )
 
+      // 首頁總覽程式保留
       default:
         return (
           <Dashboard
@@ -89,7 +98,7 @@ function App() {
       {/* 頂部系統導覽 */}
       <header className="app-header">
 
-        {/* 第一層：品牌及使用者 */}
+        {/* 第一層：品牌及測試狀態 */}
         <div className="header-main">
           <div className="brand-area">
             <div className="brand-icon">
@@ -98,47 +107,24 @@ function App() {
 
             <div>
               <div className="brand-title">
-                SAP 耗用分析系統
-              </div>
-
-              <div className="brand-subtitle">
-                MATERIAL CONSUMPTION ANALYSIS
+                耗用分析
               </div>
             </div>
           </div>
 
           <div className="user-area">
             <div className="user-info">
-              <span className="user-name">OWNER</span>
-              <span className="user-role">系統管理者</span>
+              <span className="user-name">測試中</span>
             </div>
 
-            <div className="user-avatar">O</div>
+            <div className="user-avatar">T</div>
           </div>
         </div>
 
-        {/* 第二層：功能選單 */}
+        {/* 第二層：目前開放的功能選單 */}
         <div className="header-navigation">
           <nav className="main-nav">
-            {menuItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`nav-item ${
-                  activeMenu === item.id ? 'active' : ''
-                }`}
-                onClick={() => setActiveMenu(item.id)}
-              >
-                <i className={`bi ${item.icon}`} />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="nav-separator" />
-
-          <nav className="admin-nav">
-            {adminItems.map((item) => (
+            {visibleMenuItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -158,40 +144,12 @@ function App() {
       {/* 主要內容 */}
       <main className="main-content">
 
-        {/* 頁面標題 */}
-        <div className="page-heading">
-          <div>
-            <div className="breadcrumb-text">
-              系統首頁
-              <i className="bi bi-chevron-right" />{' '}
-              {activeItem?.label}
-            </div>
-
-            <h4>
-              {activeMenu === 'dashboard'
-                ? '營運總覽'
-                : activeItem?.label}
-            </h4>
-
-            <p>
-              {activeMenu === 'dashboard'
-                ? '掌握 SAP 物料耗用狀況與資料管理進度。'
-                : `目前位置：${activeItem?.label}`}
-            </p>
-          </div>
-
-          <div className="page-date">
-            <i className="bi bi-calendar3" />
-            <span>物料耗用分析管理中心</span>
-          </div>
-        </div>
-
         {/* 頁面內容 */}
         {renderPage()}
 
         <footer className="app-footer">
           <span>
-            SAP MATERIAL CONSUMPTION ANALYSIS SYSTEM
+            耗用分析
           </span>
           <span>Version 1.0</span>
         </footer>

@@ -101,13 +101,9 @@ function App() {
         {/* 第一層：品牌及測試狀態 */}
         <div className="header-main">
           <div className="brand-area">
-            <div className="brand-icon">
-              <i className="bi bi-boxes" />
-            </div>
-
             <div>
               <div className="brand-title">
-                耗用分析
+                物料耗用分析
               </div>
             </div>
           </div>

@@ -177,7 +177,7 @@ function ConsumptionChart({ data }) {
                 fontSize="12"
                 fill="currentColor"
               >
-                {item.month.slice(5)}月
+                {item.month}
               </text>
             </g>
           ))}
@@ -263,13 +263,13 @@ function MaterialResult({ item, months }) {
       </h6>
 
       <div className="table-responsive">
-        <table className="table table-bordered table-hover align-middle mb-0">
+        <table className="table table-bordered table-hover align-middle mb-0 text-center">
           <thead className="table-light">
             <tr>
-              <th>月份</th>
-              <th className="text-end">耗用量</th>
-              <th className="text-end">退料量</th>
-              <th className="text-end">淨耗用量</th>
+              <th>過帳年月</th>
+              <th>耗用量</th>
+              <th>退料量</th>
+              <th>淨耗用量</th>
             </tr>
           </thead>
 
@@ -282,15 +282,15 @@ function MaterialResult({ item, months }) {
                         {monthItem.month}
                       </td>
 
-                      <td className="text-end">
+                      <td>
                         {formatNumber(monthItem.issue)}
                       </td>
 
-                      <td className="text-end">
+                      <td>
                         {formatNumber(monthItem.returned)}
                       </td>
 
-                      <td className="text-end fw-semibold">
+                      <td className="fw-semibold">
                         {formatNumber(monthItem.net)}
                       </td>
 

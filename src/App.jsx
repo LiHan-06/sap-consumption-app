@@ -147,13 +147,6 @@ function App() {
         {/* 頁面內容 */}
         {renderPage()}
 
-        <footer className="app-footer">
-          <span>
-            耗用分析
-          </span>
-          <span>Version 1.0</span>
-        </footer>
-
       </main>
     </div>
   )

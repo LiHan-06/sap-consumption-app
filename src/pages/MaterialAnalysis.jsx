@@ -408,7 +408,7 @@ const materialOptions = useMemo(() => {
           .includes(queryMaterial.trim().toLowerCase())
 
       const matchesMovement =
-        ['261', '262','543','544'].includes(row.movement)
+        ['261', '262','543','544','685', '686'].includes(row.movement)
 
       return (
         matchesDate &&
@@ -445,11 +445,11 @@ const materialOptions = useMemo(() => {
 
       const item = materialMonths.get(month)
 
-      if (['261', '543'].includes(row.movement)) {
+      if (['261', '543', '685'].includes(row.movement)) {
         item.issue += row.quantity
       }
 
-      if (['262', '544'].includes(row.movement)) {
+      if (['262', '544','686'].includes(row.movement)) {
         item.returned += row.quantity
       }
 

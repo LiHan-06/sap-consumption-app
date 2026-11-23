@@ -302,14 +302,14 @@ export default function MB51Upload({ onImport }) {
 
         <div className="fw-semibold mb-3">
         <i className="bi bi-info-circle me-2 text-primary" />
-        SAP MB51 匯出 Excel 僅需保留以下四個欄位：
+        SAP MB51 匯出 Excel 僅需保留以下欄位：
         </div>
 
         <div className="d-flex flex-wrap justify-content-center gap-2">
         {REQUIRED_COLUMNS.map((column) => (
             <span
             key={column}
-            className="badge bg-light text-dark border px-3 py-2"
+            className="badge bg-light text-danger border px-3 py-2"
             >
             {column}
             </span>

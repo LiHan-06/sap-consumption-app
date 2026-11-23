@@ -305,16 +305,34 @@ export default function MB51Upload({ onImport }) {
         SAP MB51 匯出 Excel 僅需保留以下欄位：
         </div>
 
-        <div className="d-flex flex-wrap justify-content-center gap-2">
+              <div className="d-flex flex-wrap justify-content-center gap-2">
         {REQUIRED_COLUMNS.map((column) => (
-            <span
+          <span
             key={column}
             className="badge bg-light text-danger border px-3 py-2"
-            >
+          >
             {column}
-            </span>
+          </span>
         ))}
+      </div>
+
+      {/* 納入計算的異動類型 */}
+      <div className="mt-3">
+        <div className="text-secondary small mb-2">
+          目前納入計算的異動類型：
         </div>
+
+        <div className="d-flex flex-wrap justify-content-center gap-2">
+          {['261', '262', '543', '544', '685', '686'].map((type) => (
+            <span
+              key={type}
+              className="badge bg-light text-primary border px-3 py-2"
+            >
+              {type}
+            </span>
+          ))}
+        </div>
+      </div>
 
     </div>
     </div>

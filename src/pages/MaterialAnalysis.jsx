@@ -278,7 +278,7 @@ function MaterialResult({ item, months }) {
                   .filter((monthItem) => monthItem.count > 0)
                   .map((monthItem) => (
                     <tr key={monthItem.month}>
-                      <td className="fw-semibold">
+                      <td className="fw-semibold" style={{ backgroundColor: '#eaf3ff', color: '#212529' }}>
                         {monthItem.month}
                       </td>
 
@@ -290,7 +290,7 @@ function MaterialResult({ item, months }) {
                         {formatNumber(monthItem.returned)}
                       </td>
 
-                      <td className="fw-semibold">
+                      <td className="fw-semibold"  style={{ backgroundColor: '#eaf5ec', color: '#212529' }}>
                         {formatNumber(monthItem.net)}
                       </td>
 
@@ -647,8 +647,10 @@ const materialOptions = useMemo(() => {
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body p-4">
 
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-              <div>
+            <div
+              className="d-flex justify-content-start align-items-center flex-wrap gap-2 mb-3"
+            >
+              <div className="text-start">
                 <h6 className="fw-bold mb-1">
                   物料耗用分析結果
                 </h6>
@@ -656,8 +658,11 @@ const materialOptions = useMemo(() => {
                 <div className="text-secondary small">
                   異動資料：{filteredRows.length} 筆
                   ／ 物料：{monthlySummary.length} 種
-                  ／ 統計月份：{months.length} 個月
+                  ／ 統計期間：{months.length > 0
+                    ? `${months[0]} ～ ${months[months.length - 1]}`
+                    : '無資料'} 共 {months.length} 個月
                 </div>
+
               </div>
             </div>
 

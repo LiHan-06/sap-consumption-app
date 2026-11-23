@@ -205,7 +205,7 @@ function MaterialResult({ item, months }) {
         <div className="col-12 col-md-6 col-xl-3">
           <div className="bg-light rounded p-3 h-100">
             <div className="small text-secondary mb-1">
-              區間 261 耗用量
+              區間 | 耗用量
             </div>
             <div className="fs-4 fw-bold">
               {formatNumber(item.totalIssue)}
@@ -216,7 +216,7 @@ function MaterialResult({ item, months }) {
         <div className="col-12 col-md-6 col-xl-3">
           <div className="bg-light rounded p-3 h-100">
             <div className="small text-secondary mb-1">
-              區間 262 退料量
+              區間 | 退料量
             </div>
             <div className="fs-4 fw-bold">
               {formatNumber(item.totalReturned)}
@@ -227,7 +227,7 @@ function MaterialResult({ item, months }) {
         <div className="col-12 col-md-6 col-xl-3">
           <div className="bg-light rounded p-3 h-100">
             <div className="small text-secondary mb-1">
-              區間淨耗用量
+              區間 | 淨耗用量
             </div>
             <div className="fs-4 fw-bold">
               {formatNumber(item.totalNet)}
@@ -238,7 +238,7 @@ function MaterialResult({ item, months }) {
         <div className="col-12 col-md-6 col-xl-3">
           <div className="bg-primary-subtle rounded p-3 h-100">
             <div className="small text-primary mb-1">
-              平均月淨耗用量
+              平均 | 月淨耗用量
             </div>
             <div className="fs-4 fw-bold text-primary">
               {formatNumber(item.averageMonthly)}
@@ -267,8 +267,8 @@ function MaterialResult({ item, months }) {
           <thead className="table-light">
             <tr>
               <th>月份</th>
-              <th className="text-end">261 耗用量</th>
-              <th className="text-end">262 退料量</th>
+              <th className="text-end">耗用量</th>
+              <th className="text-end">退料量</th>
               <th className="text-end">淨耗用量</th>
             </tr>
           </thead>
@@ -408,7 +408,7 @@ const materialOptions = useMemo(() => {
           .includes(queryMaterial.trim().toLowerCase())
 
       const matchesMovement =
-        ['261', '262'].includes(row.movement)
+        ['261', '262','543','544'].includes(row.movement)
 
       return (
         matchesDate &&
@@ -445,11 +445,11 @@ const materialOptions = useMemo(() => {
 
       const item = materialMonths.get(month)
 
-      if (row.movement === '261') {
+      if (['261', '543'].includes(row.movement)) {
         item.issue += row.quantity
       }
 
-      if (row.movement === '262') {
+      if (['262', '544'].includes(row.movement)) {
         item.returned += row.quantity
       }
 
@@ -716,7 +716,7 @@ const materialOptions = useMemo(() => {
             ) : (
 
               <div className="text-center text-secondary py-5">
-                目前查詢條件沒有 261／262 資料。
+                目前查詢條件沒有異動資料。
               </div>
 
             )}

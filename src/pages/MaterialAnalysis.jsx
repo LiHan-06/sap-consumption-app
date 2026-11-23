@@ -338,41 +338,48 @@ const materialOptions = useMemo(() => {
 }, [normalizedRows])
 
   // 尚未匯入資料
-  if (!rows.length) {
-    return (
-      <div className="content-card">
-        <div className="section-heading">
-          <div>
-            <h5>物料耗用分析</h5>
-            <p>請先匯入並確認 MB51 Excel 資料。</p>
-          </div>
-
-          <span className="status-badge status-pending">
-            尚無資料
-          </span>
-        </div>
-
-        <div className="empty-state">
-          <i className="bi bi-bar-chart-line" />
-
-          <h6>目前沒有可分析的資料</h6>
-
-          <p>
-            完成 MB51 資料匯入後，即可查看各物料耗用情況。
+ 
+if (!rows.length) {
+  return (
+    <div className="content-card">
+      <div
+        className="section-heading"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <div style={{ textAlign: 'left' }}>
+          <h5 className="text-start">物料耗用分析</h5>
+          <p className="text-start">
+            請先匯入並確認 MB51 Excel 資料。
           </p>
-
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={onGoUpload}
-          >
-            <i className="bi bi-upload me-2" />
-            前往 MB51 資料上傳
-          </button>
         </div>
+
+        <span className="status-badge status-pending">
+          尚無資料
+        </span>
       </div>
-    )
-  }
+
+      <div className="empty-state">
+        <i className="bi bi-bar-chart-line" />
+
+        <h6>目前沒有可分析的資料</h6>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={onGoUpload}
+        >
+          <i className="bi bi-upload me-2" />
+          前往 MB51 資料上傳
+        </button>
+      </div>
+    </div>
+  )
+}
+
 
   // 產生月份區間
   const months = useMemo(() => {

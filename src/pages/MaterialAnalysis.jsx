@@ -64,6 +64,41 @@ function generateMonths(startDate, endDate, availableDates) {
   return months
 }
 
+function getMaxConsecutiveMonthIssue(monthlyData, periodLength) {
+  const availableMonths = monthlyData.filter((item) => item.count > 0).length
+  const effectivePeriodLength = Math.min(periodLength, availableMonths)
+
+  if (effectivePeriodLength === 0 || monthlyData.length < effectivePeriodLength) {
+    return null
+  }
+
+  let maxTotal = -Infinity
+  let maxPeriod = null
+
+  for (let index = 0; index <= monthlyData.length - effectivePeriodLength; index += 1) {
+    const period = monthlyData.slice(index, index + effectivePeriodLength)
+    const total = period.reduce((sum, item) => sum + item.issue, 0)
+
+    if (total > maxTotal) {
+      maxTotal = total
+      maxPeriod = {
+        label: `${period[0].month} ～ ${period[period.length - 1].month}`,
+        months: period.map((item) => item.month),
+        monthCount: effectivePeriodLength,
+      }
+    }
+  }
+
+  return {
+    total: maxTotal,
+    average: maxTotal / periodLength,
+    averageDivisor: periodLength,
+    isInsufficient: availableMonths < periodLength,
+    availableMonths,
+    ...maxPeriod,
+  }
+}
+
 // 月耗用趨勢圖
 function ConsumptionChart({ data }) {
   const width = Math.max(720, data.length * 90)
@@ -308,6 +343,10 @@ export default function MaterialAnalysis({ rows, onGoUpload }) {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [materialKeyword, setMaterialKeyword] = useState('')
+  const [activeView, setActiveView] = useState('consumption')
+  const [safetyStockMonths, setSafetyStockMonths] = useState(3)
+  const [safetyStockCalculation, setSafetyStockCalculation] = useState('sum')
+  const [isSafetyStockStrategyOpen, setIsSafetyStockStrategyOpen] = useState(false)
 
   // 已送出的查詢條件
   const [appliedFilters, setAppliedFilters] = useState(null)
@@ -507,9 +546,13 @@ if (!rows.length) {
           totalReturned,
           totalNet,
           averageMonthly,
+          maxConsecutiveMonthIssue: getMaxConsecutiveMonthIssue(
+            monthlyData,
+            safetyStockMonths
+          ),
         }
       })
-  }, [filteredRows, months, appliedFilters])
+  }, [filteredRows, months, appliedFilters, safetyStockMonths])
 
   // 送出查詢
   const handleSearch = () => {
@@ -540,12 +583,106 @@ if (!rows.length) {
 
   return (
     <div className="container-fluid py-4">
+      {activeView === 'safetyStock' && (
+        <div
+          className="position-fixed"
+          style={{
+            top: '50%',
+            right: '1rem',
+            transform: 'translateY(-50%)',
+            zIndex: 1050,
+          }}
+        >
+          {isSafetyStockStrategyOpen && (
+            <div
+              id="safety-stock-strategy-menu"
+              className="position-absolute bg-white border rounded shadow p-3"
+              style={{
+                top: '50%',
+                right: 'calc(100% + 0.75rem)',
+                transform: 'translateY(-50%)',
+                width: 'min(320px, calc(100vw - 88px))',
+                maxHeight: 'calc(100vh - 2rem)',
+                overflowY: 'auto',
+              }}
+            >
+              <div className="mb-3">
+                <label htmlFor="safety-stock-months-floating" className="form-label small fw-semibold">
+                  連續月份
+                </label>
+                <select
+                  id="safety-stock-months-floating"
+                  className="form-select"
+                  value={safetyStockMonths}
+                  onChange={(e) => setSafetyStockMonths(Number(e.target.value))}
+                >
+                  {[2, 3, 4, 5].map((monthCount) => (
+                    <option key={monthCount} value={monthCount}>
+                      {monthCount} 個月
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="safety-stock-calculation-floating" className="form-label small fw-semibold">
+                  計算方式
+                </label>
+                <select
+                  id="safety-stock-calculation-floating"
+                  className="form-select"
+                  value={safetyStockCalculation}
+                  onChange={(e) => setSafetyStockCalculation(e.target.value)}
+                >
+                  <option value="sum">加總</option>
+                  <option value="average">平均</option>
+                </select>
+              </div>
+
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="btn btn-primary shadow d-flex flex-column align-items-center"
+            aria-expanded={isSafetyStockStrategyOpen}
+            aria-controls={isSafetyStockStrategyOpen ? 'safety-stock-strategy-menu' : undefined}
+            onClick={() => setIsSafetyStockStrategyOpen((isOpen) => !isOpen)}
+          >
+            <i className="bi bi-sliders mb-2" />
+            <span style={{ writingMode: 'vertical-rl', textOrientation: 'upright' }}>
+              策略調整
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* 頁面標題 */}
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-        <h4 className="fw-bold mb-0">
-          物料耗用分析
-        </h4>
+        <div className="btn-group" role="group" aria-label="分析模式">
+          <button
+            type="button"
+            className={`btn ${activeView === 'consumption' ? 'btn-primary' : 'btn-outline-primary'}`}
+            aria-pressed={activeView === 'consumption'}
+            onClick={() => {
+              setActiveView('consumption')
+              setIsSafetyStockStrategyOpen(false)
+            }}
+          >
+            物料耗用分析
+          </button>
+          <button
+            type="button"
+            className={`btn ${activeView === 'safetyStock' ? 'btn-primary' : 'btn-outline-primary'}`}
+            aria-pressed={activeView === 'safetyStock'}
+            onClick={() => {
+              setActiveView('safetyStock')
+              setIsSafetyStockStrategyOpen(false)
+            }}
+          >
+            安庫分析
+          </button>
+        </div>
 
         <span className="badge bg-success-subtle text-success px-3 py-2">
           已載入 {rows.length} 筆資料
@@ -553,16 +690,16 @@ if (!rows.length) {
       </div>
 
       {/* 查詢條件 */}
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body p-4">
+      <div className="row g-3 mb-4 align-items-stretch">
+        <div className={activeView === 'safetyStock' ? 'col-12 col-xl-7' : 'col-12'}>
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-body p-4">
+              <h6 className="fw-bold mb-3">
+                <i className="bi bi-funnel me-2 text-primary" />
+                選擇篩選條件
+              </h6>
 
-          <h6 className="fw-bold mb-3">
-            <i className="bi bi-funnel me-2 text-primary" />
-            查詢條件
-          </h6>
-
-          {/* 第一排：查詢欄位 */}
-          <div className="row g-3">
+              <div className="row g-3">
 
             <div className="col-12 col-md-4">
               <label className="form-label small fw-semibold">
@@ -622,31 +759,101 @@ if (!rows.length) {
             </div>
           )}
 
-          {/* 第二排：操作按鈕 */}
-          <div className="d-flex justify-content-center gap-3 mt-4">
+          {activeView === 'consumption' && (
+            <div className="d-flex justify-content-center gap-3 mt-4">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSearch}
+                disabled={Boolean(invalidDateRange)}
+              >
+                <i className="bi bi-search me-2" />
+                送出查詢
+              </button>
 
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleSearch}
-              disabled={Boolean(invalidDateRange)}
-            >
-              <i className="bi bi-search me-2" />
-              送出查詢
-            </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={handleClear}
+              >
+                <i className="bi bi-arrow-counterclockwise me-1" />
+                清除條件
+              </button>
+            </div>
+          )}
 
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={handleClear}
-            >
-              <i className="bi bi-arrow-counterclockwise me-1" />
-              清除條件
-            </button>
-
+            </div>
           </div>
-
         </div>
+
+        {activeView === 'safetyStock' && (
+          <div className="col-12 col-xl-5">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body p-4">
+                <h6 className="fw-bold mb-3">
+                  <i className="bi bi-sliders me-2 text-primary" />
+                  安庫策略選擇
+                </h6>
+
+                <div className="row g-3">
+                  <div className="col-12 col-md-6">
+                    <label htmlFor="safety-stock-months" className="form-label small fw-semibold">
+                      連續月份
+                    </label>
+                    <select
+                      id="safety-stock-months"
+                      className="form-select"
+                      value={safetyStockMonths}
+                      onChange={(e) => setSafetyStockMonths(Number(e.target.value))}
+                    >
+                      {[2, 3, 4, 5].map((monthCount) => (
+                        <option key={monthCount} value={monthCount}>
+                          {monthCount} 個月
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <label htmlFor="safety-stock-calculation" className="form-label small fw-semibold">
+                      計算方式
+                    </label>
+                    <select
+                      id="safety-stock-calculation"
+                      className="form-select"
+                      value={safetyStockCalculation}
+                      onChange={(e) => setSafetyStockCalculation(e.target.value)}
+                    >
+                      <option value="sum">加總</option>
+                      <option value="average">平均</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="d-flex justify-content-center gap-3 mt-4">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleSearch}
+                    disabled={Boolean(invalidDateRange)}
+                  >
+                    <i className="bi bi-search me-2" />
+                    送出查詢
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={handleClear}
+                  >
+                    <i className="bi bi-arrow-counterclockwise me-1" />
+                    清除條件
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* 分析結果：送出查詢後才顯示 */}
@@ -659,7 +866,7 @@ if (!rows.length) {
             >
               <div className="text-start">
                 <h6 className="fw-bold mb-1">
-                  物料耗用分析結果
+                  {activeView === 'safetyStock' ? '安庫分析結果' : '物料耗用分析結果'}
                 </h6>
 
                 <div className="text-secondary small">
@@ -675,7 +882,83 @@ if (!rows.length) {
 
             {monthlySummary.length > 0 ? (
 
-              monthlySummary.length > 1 ? (
+              activeView === 'safetyStock' ? (
+
+                /* 安庫分析：顯示各物料最高連續月份耗用量 */
+                <div className="d-flex flex-column gap-3">
+                  {monthlySummary.map((item, index) => (
+                    <details
+                      key={item.material}
+                      className="border rounded"
+                      open={index === 0}
+                    >
+                      <summary
+                        className="p-3 fw-bold bg-light"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <i className="bi bi-box-seam text-primary me-2" />
+                        物料編號：{item.material}
+                        <span className="badge bg-primary-subtle text-primary ms-2">
+                          安庫建議：
+                          {item.maxConsecutiveMonthIssue
+                            ? `${formatNumber(safetyStockCalculation === 'sum'
+                              ? item.maxConsecutiveMonthIssue.total
+                              : item.maxConsecutiveMonthIssue.average)}（${item.maxConsecutiveMonthIssue.label}）`
+                            : '無可用資料'}
+                        </span>
+                        {item.maxConsecutiveMonthIssue?.isInsufficient && (
+                          <span className="badge bg-warning-subtle text-warning-emphasis ms-2">
+                            資料不足：僅有 {item.maxConsecutiveMonthIssue.availableMonths} 個月資料
+                          </span>
+                        )}
+                      </summary>
+
+                      <div className="p-3">
+                        {item.maxConsecutiveMonthIssue ? (
+                          <>
+                            <p className="small text-secondary mb-2">
+                              建議數值依 {item.maxConsecutiveMonthIssue.label} 的連續 {item.maxConsecutiveMonthIssue.monthCount} 個月耗用量
+                              {safetyStockCalculation === 'sum'
+                                ? '加總'
+                                : `平均（加總 ${formatNumber(item.maxConsecutiveMonthIssue.total)} ÷ ${item.maxConsecutiveMonthIssue.averageDivisor} 個月）`}。
+                              {item.maxConsecutiveMonthIssue.isInsufficient && (
+                                <span className="d-block text-warning-emphasis">
+                                  資料不足，平均仍依所選的 {item.maxConsecutiveMonthIssue.averageDivisor} 個月計算；目前有 {item.maxConsecutiveMonthIssue.availableMonths} 個月資料。
+                                </span>
+                              )}
+                            </p>
+                            <div className="table-responsive">
+                              <table className="table table-bordered align-middle mb-0 text-center">
+                                <thead className="table-light">
+                                  <tr>
+                                    <th>過帳年月</th>
+                                    <th>耗用量</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {item.monthlyData
+                                    .filter((monthItem) => item.maxConsecutiveMonthIssue.months.includes(monthItem.month))
+                                    .map((monthItem) => (
+                                      <tr key={monthItem.month}>
+                                        <td>{monthItem.month}</td>
+                                        <td>{formatNumber(monthItem.issue)}</td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-secondary mb-0">
+                            查詢期間不足 {safetyStockMonths} 個月，無法計算安庫建議。
+                          </p>
+                        )}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+
+              ) : monthlySummary.length > 1 ? (
 
                 /* 多筆物料：摺疊卡片 */
                 <div className="d-flex flex-column gap-3">
@@ -710,7 +993,7 @@ if (!rows.length) {
 
                 /* 單筆物料：直接顯示 */
                 <div className="border rounded p-3">
-                  <div className="d-flex align-items-center gap-2 mb-3">
+                  <div className="d-flex align-items-center flex-wrap gap-2 mb-3">
                     <i className="bi bi-box-seam text-primary fs-5" />
                     <h6 className="fw-bold mb-0">
                       物料編號：{monthlySummary[0].material}
